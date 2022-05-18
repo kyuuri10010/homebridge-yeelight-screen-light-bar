@@ -77,13 +77,16 @@ export default class ScreenLightBar {
     if ('power' in props.params || 'main_power' in props.params || 'bg_power' in props.params) {
       // power系のプロパティはなんかおかしい時があるので、プロパティ取得で取り直す
       await this.updateProperty();
+
+      // 更新を通知
+      this.onDeviceUpdated?.(this.state);
     } else {
       // プロパティを更新
       Object.assign(this.state, props.params);
-    }
 
-    // 更新を通知
-    this.onDeviceUpdated?.(this.state);
+      // 更新を通知
+      this.onDeviceUpdated?.(props.params);
+    }
   }
 
   /**
