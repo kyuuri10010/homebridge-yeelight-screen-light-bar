@@ -13,10 +13,5 @@
 
 <br>
 
-## Characteristic.onGETでnullを返さない
-onGETでnullを返すと警告が出るので、nullを返さないようにする。（何を返せばいいのかな？）
-
-<br>
-
 ## AdaptiveLight
 homebridge-libを使えばできるのか？
