@@ -16,6 +16,8 @@ export default class ScreenLightBar {
     [key in YeelightTypes.CommandMethod]?: NodeJS.Timeout
   } = {};
 
+  onDeviceUpdated?: (state: YeelightTypes.DeviceProperty) => void;
+
   constructor(device: yeelightPlatform.Device, ipAddr: string) {
     this.device = device;
     this.ipAddr = ipAddr;
@@ -40,7 +42,7 @@ export default class ScreenLightBar {
     const device = new yeelightPlatform.Device({
       host: ipAddr,
       port: 55443,
-      debug: true,
+      debug: false,
       interval: 5000,
     });
 
@@ -66,7 +68,7 @@ export default class ScreenLightBar {
    * @return {*}
    * @memberof ScreenLightBar
    */
-  private deviceUpdated(props: unknown) {
+  private async deviceUpdated(props: unknown) {
     // 通知メッセージだけ処理する
     if (!TypeCheck.isNotificationMessage(props)) {
       return;
@@ -74,11 +76,14 @@ export default class ScreenLightBar {
 
     if ('power' in props.params || 'main_power' in props.params || 'bg_power' in props.params) {
       // power系のプロパティはなんかおかしい時があるので、プロパティ取得で取り直す
-      this.updateProperty();
+      await this.updateProperty();
     } else {
       // プロパティを更新
       Object.assign(this.state, props.params);
     }
+
+    // 更新を通知
+    this.onDeviceUpdated?.(this.state);
   }
 
   /**

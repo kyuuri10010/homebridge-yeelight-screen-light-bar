@@ -22,19 +22,21 @@ export class YeelightAccessory implements AccessoryPlugin {
     this.name = config.name;
     this.api = api;
 
-    if (typeof config.ip === 'string'){
-      this.ip = config.ip;
-      ScreenLightBar.init(config.ip).then((device) => {
-        this.device = device;
-        this.device?.updateProperty();
-        this.log.info(`${ACCESSORY_NAME} finished initializing!!`);
-      });
-    }
-
     // Make Service
     this.makeInformationService();
     this.makeMainLightService();
     this.makeBackgroundLightService();
+
+    // Init Device
+    if (typeof config.ip === 'string'){
+      this.ip = config.ip;
+      ScreenLightBar.init(config.ip).then((device) => {
+        this.device = device;
+        device.onDeviceUpdated = this.onDeviceUpdated.bind(this);
+        device.updateProperty();
+        this.log.info(`${ACCESSORY_NAME} finished initializing!!`);
+      });
+    }
   }
 
   /**
@@ -177,5 +179,50 @@ export class YeelightAccessory implements AccessoryPlugin {
   private convertNumberRange(value: number, from: YeelightTypes.Range, to: YeelightTypes.Range) {
     const converted = (value - from.min) / (from.max - from.min) * (to.max - to.min) + to.min;
     return Math.floor(converted);
+  }
+
+  /**
+   * ライトからの更新通知をHomebridgeに反映する
+   *
+   * @private
+   * @param {YeelightTypes.DeviceProperty} state
+   * @memberof YeelightAccessory
+   */
+  private onDeviceUpdated(state: YeelightTypes.DeviceProperty) {
+    // サービスを取得
+    const mainService = this.services[1];
+    const backgroundService = this.services[2];
+
+    // メインライト
+    if (state.power !== undefined) {
+      const value = state.power === 'on';
+      mainService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(value);
+    }
+    if (state.bright !== undefined) {
+      mainService.getCharacteristic(this.api.hap.Characteristic.Brightness).updateValue(state.bright);
+    }
+    if (state.ct !== undefined) {
+      const value = this.convertNumberRange(state.ct, YeelightTypes.PROPERTY_RANGE.ct, { min: 500, max: 140 });
+      mainService.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).updateValue(value);
+    }
+
+    // バックグラウンドライト
+    if (state.bg_power !== undefined) {
+      const value = state.bg_power === 'on';
+      backgroundService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(value);
+    }
+    if (state.bg_bright !== undefined) {
+      backgroundService.getCharacteristic(this.api.hap.Characteristic.Brightness).updateValue(state.bg_bright);
+    }
+    if (state.bg_ct !== undefined) {
+      const value = this.convertNumberRange(state.bg_ct, YeelightTypes.PROPERTY_RANGE.ct, { min: 500, max: 140 });
+      backgroundService.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).updateValue(value);
+    }
+    if (state.bg_hue !== undefined) {
+      backgroundService.getCharacteristic(this.api.hap.Characteristic.Hue).updateValue(state.bg_hue);
+    }
+    if (state.bg_sat !== undefined) {
+      backgroundService.getCharacteristic(this.api.hap.Characteristic.Saturation).updateValue(state.bg_sat);
+    }
   }
 }
