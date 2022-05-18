@@ -71,10 +71,7 @@ export class YeelightAccessory implements AccessoryPlugin {
     const service = new this.api.hap.Service.Lightbulb(this.name, 'main');
     service.getCharacteristic(this.api.hap.Characteristic.On).onGet(async () => {
       this.log.debug('main - get - on');
-      if (!this.device) {
-        return null;
-      }
-      return this.device.getOn('main');
+      return this.device?.getOn('main') ?? false;
     }).onSet(async (value) => {
       this.log.debug('main - set - on');
       await this.device?.setOn('main', value as boolean, true, this.log);
@@ -84,28 +81,21 @@ export class YeelightAccessory implements AccessoryPlugin {
       minValue: 1,
     }).onGet(async () => {
       this.log.debug('main - get - Brightness');
-
-      if (!this.device) {
-        return null;
-      }
-      return this.device.getBrightness('main');
+      return this.device?.getBrightness('main') ?? 1;
     }).onSet(async (value) => {
       this.log.debug('main - set - Brightness');
-
       await this.device?.setBrightness('main', value as number, this.log);
     });
 
     service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).onGet(async () => {
       this.log.debug('main - get - ColorTemperature');
-
       const value = this.device?.getColorTemperature('main');
       if (!value) {
-        return null;
+        return 140;
       }
       return this.convertNumberRange(value, YeelightTypes.PROPERTY_RANGE.ct, { min: 500, max: 140 });
     }).onSet(async (value) => {
       this.log.debug('main - set - ColorTemperature');
-
       const converted = this.convertNumberRange(value as number, { min: 500, max: 140 }, YeelightTypes.PROPERTY_RANGE.ct);
       await this.device?.setColorTemperature('main', converted, this.log);
     });
@@ -123,14 +113,9 @@ export class YeelightAccessory implements AccessoryPlugin {
     const service = new this.api.hap.Service.Lightbulb(this.name, 'background');
     service.getCharacteristic(this.api.hap.Characteristic.On).onGet(async () => {
       this.log.debug('background - get - On');
-
-      if (!this.device) {
-        return null;
-      }
-      return this.device.getOn('background');
+      return this.device?.getOn('background') ?? false;
     }).onSet(async (value) => {
       this.log.debug('background - set - On');
-
       await this.device?.setOn('background', value as boolean, true, this.log);
     });
 
@@ -138,28 +123,21 @@ export class YeelightAccessory implements AccessoryPlugin {
       minValue: 1,
     }).onGet(async () => {
       this.log.debug('background - get - Brightness');
-
-      if (!this.device) {
-        return null;
-      }
-      return this.device.getBrightness('background');
+      return this.device?.getBrightness('background') ?? 1;
     }).onSet(async (value) => {
       this.log.debug('background - set - Brightness');
-
       await this.device?.setBrightness('background', value as number, this.log);
     });
 
     service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).onGet(async () => {
       this.log.debug('background - get - ColorTemperature');
-
       const value = this.device?.getColorTemperature('background');
       if (!value) {
-        return null;
+        return 140;
       }
       return this.convertNumberRange(value, YeelightTypes.PROPERTY_RANGE.ct, { min: 500, max: 140 });
     }).onSet(async (value) => {
       this.log.debug('background - set - ColorTemperature');
-
       const converted = this.convertNumberRange(value as number, { min: 500, max: 140 }, YeelightTypes.PROPERTY_RANGE.ct);
       await this.device?.setColorTemperature('background', converted, this.log);
     });
@@ -168,24 +146,15 @@ export class YeelightAccessory implements AccessoryPlugin {
       maxValue: 359,
     }).onGet(async () => {
       this.log.debug('background - get - Hue');
-
-      if (!this.device) {
-        return null;
-      }
-      return this.device.getHue('background');
+      return this.device?.getHue('background') ?? 0;
     }).onSet(async (value) => {
       this.log.debug('background - set - Hue');
-
       await this.device?.setHue('background', value as number, this.log);
     });
 
     service.getCharacteristic(this.api.hap.Characteristic.Saturation).onGet(async () => {
       this.log.debug('background - get - Saturation');
-
-      if (!this.device) {
-        return null;
-      }
-      return this.device.getSaturation('background');
+      return this.device?.getSaturation('background') ?? 0;
     }).onSet(async (value) => {
       this.log.debug('background - set - Saturation');
 
