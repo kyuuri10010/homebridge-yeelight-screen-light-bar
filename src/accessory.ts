@@ -112,7 +112,7 @@ export class YeelightAccessory implements AccessoryPlugin {
    * @memberof YeelightAccessory
    */
   private makeBackgroundLightService() {
-    const service = new this.api.hap.Service.Lightbulb(this.name, 'background');
+    const service = new this.api.hap.Service.Lightbulb(`${this.name} - background`, 'background');
     service.getCharacteristic(this.api.hap.Characteristic.On).onGet(async () => {
       this.log.debug('background - get - On');
       return this.device?.getOn('background') ?? false;
