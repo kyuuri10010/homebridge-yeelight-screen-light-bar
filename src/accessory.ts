@@ -71,39 +71,42 @@ export class YeelightAccessory implements AccessoryPlugin {
    */
   private makeMainLightService() {
     const service = new this.api.hap.Service.Lightbulb(this.name, 'main');
-    service.getCharacteristic(this.api.hap.Characteristic.On).onGet(async () => {
-      this.log.debug('main - get - on');
-      return this.device?.getOn('main') ?? false;
-    }).onSet(async (value) => {
-      this.log.debug('main - set - on');
-      await this.device?.setOn('main', value as boolean, true, this.log);
-    });
+    service.getCharacteristic(this.api.hap.Characteristic.On)
+      .onGet(async () => {
+        this.log.debug('main - get - on');
+        return this.device?.getOn('main') ?? false;
+      }).onSet(async (value) => {
+        this.log.debug('main - set - on');
+        await this.device?.setOn('main', value as boolean, true, this.log);
+      });
 
-    service.getCharacteristic(this.api.hap.Characteristic.Brightness).setProps({
-      minValue: 1,
-    }).onGet(async () => {
-      this.log.debug('main - get - Brightness');
-      return this.device?.getBrightness('main') ?? 1;
-    }).onSet(async (value) => {
-      this.log.debug('main - set - Brightness');
-      await this.device?.setBrightness('main', value as number, this.log);
-    });
+    service.getCharacteristic(this.api.hap.Characteristic.Brightness)
+      .setProps({
+        minValue: 1,
+      }).onGet(async () => {
+        this.log.debug('main - get - Brightness');
+        return this.device?.getBrightness('main') ?? 1;
+      }).onSet(async (value) => {
+        this.log.debug('main - set - Brightness');
+        await this.device?.setBrightness('main', value as number, this.log);
+      });
 
-    service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).setProps({
-      minValue: 153,
-      maxValue: 370,
-    }).onGet(async () => {
-      this.log.debug('main - get - ColorTemperature');
-      const value = this.device?.getColorTemperature('main');
-      if (!value) {
-        return 153;
-      }
-      return this.convertColorTempalture(value);
-    }).onSet(async (value) => {
-      this.log.debug('main - set - ColorTemperature');
-      const converted = this.convertMired(value as number);
-      await this.device?.setColorTemperature('main', converted, this.log);
-    });
+    service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature)
+      .setProps({
+        minValue: 153,
+        maxValue: 370,
+      }).onGet(async () => {
+        this.log.debug('main - get - ColorTemperature');
+        const value = this.device?.getColorTemperature('main');
+        if (!value) {
+          return 153;
+        }
+        return this.convertColorTempalture(value);
+      }).onSet(async (value) => {
+        this.log.debug('main - set - ColorTemperature');
+        const converted = this.convertMired(value as number);
+        await this.device?.setColorTemperature('main', converted, this.log);
+      });
 
     this.services.push(service);
   }
@@ -116,58 +119,63 @@ export class YeelightAccessory implements AccessoryPlugin {
    */
   private makeBackgroundLightService() {
     const service = new this.api.hap.Service.Lightbulb(`${this.name} - background`, 'background');
-    service.getCharacteristic(this.api.hap.Characteristic.On).onGet(async () => {
-      this.log.debug('background - get - On');
-      return this.device?.getOn('background') ?? false;
-    }).onSet(async (value) => {
-      this.log.debug('background - set - On');
-      await this.device?.setOn('background', value as boolean, true, this.log);
-    });
+    service.getCharacteristic(this.api.hap.Characteristic.On)
+      .onGet(async () => {
+        this.log.debug('background - get - On');
+        return this.device?.getOn('background') ?? false;
+      }).onSet(async (value) => {
+        this.log.debug('background - set - On');
+        await this.device?.setOn('background', value as boolean, true, this.log);
+      });
 
-    service.getCharacteristic(this.api.hap.Characteristic.Brightness).setProps({
-      minValue: 1,
-    }).onGet(async () => {
-      this.log.debug('background - get - Brightness');
-      return this.device?.getBrightness('background') ?? 1;
-    }).onSet(async (value) => {
-      this.log.debug('background - set - Brightness');
-      await this.device?.setBrightness('background', value as number, this.log);
-    });
+    service.getCharacteristic(this.api.hap.Characteristic.Brightness)
+      .setProps({
+        minValue: 1,
+      }).onGet(async () => {
+        this.log.debug('background - get - Brightness');
+        return this.device?.getBrightness('background') ?? 1;
+      }).onSet(async (value) => {
+        this.log.debug('background - set - Brightness');
+        await this.device?.setBrightness('background', value as number, this.log);
+      });
 
-    service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).setProps({
-      minValue: 153,
-      maxValue: 370,
-    }).onGet(async () => {
-      this.log.debug('background - get - ColorTemperature');
-      const value = this.device?.getColorTemperature('background');
-      if (!value) {
-        return 153;
-      }
-      return this.convertColorTempalture(value);
-    }).onSet(async (value) => {
-      this.log.debug('background - set - ColorTemperature');
-      const converted = this.convertMired(value as number);
-      await this.device?.setColorTemperature('background', converted, this.log);
-    });
+    service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature)
+      .setProps({
+        minValue: 153,
+        maxValue: 370,
+      }).onGet(async () => {
+        this.log.debug('background - get - ColorTemperature');
+        const value = this.device?.getColorTemperature('background');
+        if (!value) {
+          return 153;
+        }
+        return this.convertColorTempalture(value);
+      }).onSet(async (value) => {
+        this.log.debug('background - set - ColorTemperature');
+        const converted = this.convertMired(value as number);
+        await this.device?.setColorTemperature('background', converted, this.log);
+      });
 
-    service.getCharacteristic(this.api.hap.Characteristic.Hue).setProps({
-      maxValue: 359,
-    }).onGet(async () => {
-      this.log.debug('background - get - Hue');
-      return this.device?.getHue('background') ?? 0;
-    }).onSet(async (value) => {
-      this.log.debug('background - set - Hue');
-      await this.device?.setHue('background', value as number, this.log);
-    });
+    service.getCharacteristic(this.api.hap.Characteristic.Hue)
+      .setProps({
+        maxValue: 359,
+      }).onGet(async () => {
+        this.log.debug('background - get - Hue');
+        return this.device?.getHue('background') ?? 0;
+      }).onSet(async (value) => {
+        this.log.debug('background - set - Hue');
+        await this.device?.setHue('background', value as number, this.log);
+      });
 
-    service.getCharacteristic(this.api.hap.Characteristic.Saturation).onGet(async () => {
-      this.log.debug('background - get - Saturation');
-      return this.device?.getSaturation('background') ?? 0;
-    }).onSet(async (value) => {
-      this.log.debug('background - set - Saturation');
+    service.getCharacteristic(this.api.hap.Characteristic.Saturation)
+      .onGet(async () => {
+        this.log.debug('background - get - Saturation');
+        return this.device?.getSaturation('background') ?? 0;
+      }).onSet(async (value) => {
+        this.log.debug('background - set - Saturation');
 
-      await this.device?.setSaturation('background', value as number, this.log);
-    });
+        await this.device?.setSaturation('background', value as number, this.log);
+      });
 
     this.services.push(service);
   }
