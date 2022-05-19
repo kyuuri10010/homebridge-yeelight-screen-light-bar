@@ -279,21 +279,21 @@ export default class ScreenLightBar {
   }
 
   async setHue(type: YeelightTypes.LightType, value: number, log?: Logging): Promise<void> {
-    const command = ((_type, _value): [YeelightTypes.CommandMessage, YeelightTypes.DeviceProperty] | null => {
+    const command = ((_type, _value, _currentState): [YeelightTypes.CommandMessage, YeelightTypes.DeviceProperty] | null => {
       switch (_type) {
         case 'main':
           return null;
         case 'background':
-          if (!this.state.bg_sat){
+          if (!_currentState.bg_sat){
             return null;
           }
           return [{
             id: -1,
             method: 'bg_set_hsv',
-            params: [_value, this.state.bg_sat, 'smooth', 250],
+            params: [_value, _currentState.bg_sat, 'smooth', 250],
           }, { 'bg_hue': _value }];
       }
-    })(type, value);
+    })(type, value, this.state);
 
     if (!command) {
       return;
@@ -307,21 +307,21 @@ export default class ScreenLightBar {
   }
 
   async setSaturation(type: YeelightTypes.LightType, value: number, log?: Logging): Promise<void> {
-    const command = ((_type, _value): [YeelightTypes.CommandMessage, YeelightTypes.DeviceProperty] | null => {
+    const command = ((_type, _value, _currentState): [YeelightTypes.CommandMessage, YeelightTypes.DeviceProperty] | null => {
       switch (_type) {
         case 'main':
           return null;
         case 'background':
-          if (!this.state.bg_hue){
+          if (!_currentState.bg_hue){
             return null;
           }
           return [{
             id: -1,
             method: 'bg_set_hsv',
-            params: [this.state.bg_hue, _value, 'smooth', 250],
+            params: [_currentState.bg_hue, _value, 'smooth', 250],
           }, { 'bg_sat': _value }];
       }
-    })(type, value);
+    })(type, value, this.state);
 
     if (!command) {
       return;
