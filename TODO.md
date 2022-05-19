@@ -9,4 +9,4 @@
 <br>
 
 ## AdaptiveLight
-homebridge-libを使えばできるのか？
+明るさ変更にAdaptiveLightingを含める

@@ -5,6 +5,7 @@ import {
   Logging,
   Service,
 } from 'homebridge';
+import homebridgeLib, { AdaptiveLighting } from 'homebridge-lib';
 import { ACCESSORY_NAME } from './settings';
 import ScreenLightBar from './yeelight/screen-light-bar';
 import * as YeelightTypes from './yeelight/type/yeelight-types';
@@ -15,6 +16,7 @@ export class YeelightAccessory implements AccessoryPlugin {
   private readonly api: API;
   private readonly ip: string = '';
   private services: Service[] = [];
+  private adaptiveLighting?: AdaptiveLighting;
   private device?: ScreenLightBar;
 
   constructor(log: Logging, config: AccessoryConfig, api: API) {
@@ -108,7 +110,69 @@ export class YeelightAccessory implements AccessoryPlugin {
         await this.device?.setColorTemperature('main', converted, this.log);
       });
 
+    // AdaptiveLighting
+    // https://github.com/ebaauw/homebridge-hue/blob/main/lib/HueLight.js
+    service.getCharacteristic(this.api.hap.Characteristic.SupportedCharacteristicValueTransitionConfiguration)
+      .onGet(async () => {
+        this.log.debug('main - get - SupportedCharacteristicValueTransitionConfiguration');
+
+        const bri = service.getCharacteristic(this.api.hap.Characteristic.Brightness).iid!;
+        const ct = service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).iid!;
+
+        this.adaptiveLighting = new homebridgeLib.AdaptiveLighting(bri, ct);
+        const configuration = this.adaptiveLighting!.generateConfiguration();
+        this.adaptiveLighting!.parseConfiguration(configuration);
+
+        service.getCharacteristic(this.api.hap.Characteristic.SupportedCharacteristicValueTransitionConfiguration)
+          .removeOnGet();
+
+        return configuration;
+      });
+
+    service.getCharacteristic(this.api.hap.Characteristic.CharacteristicValueTransitionControl)
+      .onGet(async () => {
+        this.log.debug('main - get - CharacteristicValueTransitionControl');
+
+        const control = this.adaptiveLighting?.generateControl() ?? null;
+        if (control) {
+          this.adaptiveLighting!.parseControl(control);
+        }
+        return control;
+      })
+      .onSet(async (value) => {
+        this.log.debug('main - set - CharacteristicValueTransitionControl');
+
+        this.adaptiveLighting?.parseControl(value as string);
+        const controlResponse = this.adaptiveLighting?.generateControlResponse();
+        if (controlResponse) {
+          this.adaptiveLighting!.parseControl(controlResponse);
+        }
+
+        service.getCharacteristic(this.api.hap.Characteristic.CharacteristicValueActiveTransitionCount)
+          .updateValue(1);
+
+        await this.test();
+      });
+
+    service.getCharacteristic(this.api.hap.Characteristic.CharacteristicValueActiveTransitionCount)
+      .updateValue(0);
+
     this.services.push(service);
+  }
+
+  async test() {
+    const brightness = this.device?.getBrightness('main');
+    if (typeof brightness !== 'number') {
+      return;
+    }
+
+    const ct = this.adaptiveLighting?.getCt(brightness);
+    if (typeof ct !== 'number') {
+      return;
+    }
+
+    const converted = this.convertMired(ct);
+    await this.device?.setColorTemperature('main', converted, this.log);
   }
 
   /**
