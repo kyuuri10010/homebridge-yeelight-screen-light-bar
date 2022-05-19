@@ -190,22 +190,32 @@ export default class ScreenLightBar {
   async setOn(type: YeelightTypes.LightType, value: boolean, isSmooth: boolean, log?: Logging): Promise<void> {
     const isOn = value ? 'on' : 'off';
     const effect = isSmooth ? 'smooth' : 'sudden';
-    const command = ((_type, _isOn, _effect): [YeelightTypes.CommandMessage, YeelightTypes.DeviceProperty] => {
+    const command = ((_type, _isOn, _effect, _currentState): [YeelightTypes.CommandMessage, YeelightTypes.DeviceProperty] | null => {
       switch (_type) {
         case 'main':
+          if (_currentState.power === isOn) {
+            return null;
+          }
           return [{
             id: -1,
             method: 'set_power',
             params: [_isOn, _effect, 500],
           }, { 'power': _isOn }];
         case 'background':
+          if (_currentState.bg_power === isOn) {
+            return null;
+          }
           return [{
             id: -1,
             method: 'bg_set_power',
             params: [_isOn, _effect, 500],
           }, { 'bg_power': _isOn }];
       }
-    })(type, isOn, effect);
+    })(type, isOn, effect, this.state);
+
+    if (!command) {
+      return;
+    }
 
     // コマンドを実行
     await DeviceUtil.sendCommand(this.device, command[0], log);
