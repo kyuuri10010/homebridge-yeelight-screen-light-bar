@@ -89,16 +89,19 @@ export class YeelightAccessory implements AccessoryPlugin {
       await this.device?.setBrightness('main', value as number, this.log);
     });
 
-    service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).onGet(async () => {
+    service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).setProps({
+      minValue: 153,
+      maxValue: 370,
+    }).onGet(async () => {
       this.log.debug('main - get - ColorTemperature');
       const value = this.device?.getColorTemperature('main');
       if (!value) {
-        return 140;
+        return 153;
       }
-      return this.convertNumberRange(value, YeelightTypes.PROPERTY_RANGE.ct, { min: 500, max: 140 });
+      return this.convertColorTempalture(value);
     }).onSet(async (value) => {
       this.log.debug('main - set - ColorTemperature');
-      const converted = this.convertNumberRange(value as number, { min: 500, max: 140 }, YeelightTypes.PROPERTY_RANGE.ct);
+      const converted = this.convertMired(value as number);
       await this.device?.setColorTemperature('main', converted, this.log);
     });
 
@@ -131,16 +134,19 @@ export class YeelightAccessory implements AccessoryPlugin {
       await this.device?.setBrightness('background', value as number, this.log);
     });
 
-    service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).onGet(async () => {
+    service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).setProps({
+      minValue: 153,
+      maxValue: 370,
+    }).onGet(async () => {
       this.log.debug('background - get - ColorTemperature');
       const value = this.device?.getColorTemperature('background');
       if (!value) {
-        return 140;
+        return 153;
       }
-      return this.convertNumberRange(value, YeelightTypes.PROPERTY_RANGE.ct, { min: 500, max: 140 });
+      return this.convertColorTempalture(value);
     }).onSet(async (value) => {
       this.log.debug('background - set - ColorTemperature');
-      const converted = this.convertNumberRange(value as number, { min: 500, max: 140 }, YeelightTypes.PROPERTY_RANGE.ct);
+      const converted = this.convertMired(value as number);
       await this.device?.setColorTemperature('background', converted, this.log);
     });
 
@@ -167,18 +173,37 @@ export class YeelightAccessory implements AccessoryPlugin {
   }
 
   /**
-   * 数値を範囲に合わせてを変換する
+   * 色温度をミレッドに変換する
    *
    * @private
-   * @param {number} value
-   * @param {YeelightTypes.Range} from
-   * @param {YeelightTypes.Range} to
+   * @param {number} ct
    * @return {*}
    * @memberof YeelightAccessory
    */
-  private convertNumberRange(value: number, from: YeelightTypes.Range, to: YeelightTypes.Range) {
-    const converted = (value - from.min) / (from.max - from.min) * (to.max - to.min) + to.min;
-    return Math.floor(converted);
+  private convertColorTempalture(ct: number) {
+    this.log.debug(`ct ${ct} to mired ${Math.floor(1 / ct * 1000000)}`);
+    return Math.floor(1 / ct * 1000000);
+  }
+
+  /**
+   * ミレッドを色温度に変換する
+   *
+   * @private
+   * @param {number} m
+   * @return {*}
+   * @memberof YeelightAccessory
+   */
+  private convertMired(m: number) {
+    const value = Math.floor(1000000 / m);
+    this.log.debug(`mired ${m} to ct ${value}`);
+
+    if (value > YeelightTypes.PROPERTY_RANGE.ct.max) {
+      return YeelightTypes.PROPERTY_RANGE.ct.max;
+    }
+    if (value < YeelightTypes.PROPERTY_RANGE.ct.min) {
+      return YeelightTypes.PROPERTY_RANGE.ct.min;
+    }
+    return value;
   }
 
   /**
@@ -202,7 +227,7 @@ export class YeelightAccessory implements AccessoryPlugin {
       mainService.getCharacteristic(this.api.hap.Characteristic.Brightness).updateValue(state.bright);
     }
     if (state.ct !== undefined) {
-      const value = this.convertNumberRange(state.ct, YeelightTypes.PROPERTY_RANGE.ct, { min: 500, max: 140 });
+      const value = this.convertColorTempalture(state.ct);
       mainService.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).updateValue(value);
     }
 
@@ -215,7 +240,7 @@ export class YeelightAccessory implements AccessoryPlugin {
       backgroundService.getCharacteristic(this.api.hap.Characteristic.Brightness).updateValue(state.bg_bright);
     }
     if (state.bg_ct !== undefined) {
-      const value = this.convertNumberRange(state.bg_ct, YeelightTypes.PROPERTY_RANGE.ct, { min: 500, max: 140 });
+      const value = this.convertColorTempalture(state.bg_ct);
       backgroundService.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).updateValue(value);
     }
     if (state.bg_hue !== undefined) {
