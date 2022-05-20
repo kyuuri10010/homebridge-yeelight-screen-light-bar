@@ -27,8 +27,10 @@
     "homebridge-plugin"
   ],
   "dependencies": {
+    "@types/node-schedule": "^2.1.0",
     "delay": "^5.0.0",
     "homebridge-lib": "^5.5.0",
+    "node-schedule": "^2.1.0",
     "yeelight-platform": "^1.0.9"
   },
   "devDependencies": {
