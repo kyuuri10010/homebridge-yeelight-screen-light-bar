@@ -74,19 +74,28 @@ export default class ScreenLightBar {
       return;
     }
 
-    if ('power' in props.params || 'main_power' in props.params || 'bg_power' in props.params) {
-      // power系のプロパティはなんかおかしい時があるので、プロパティ取得で取り直す
-      await this.updateProperty();
+    // 現在の状態を保持しておく
+    const currentState = Object.assign({}, this.state);
 
-      // 更新を通知
-      this.onDeviceUpdated?.(this.state);
+    // power系のプロパティはなんかおかしい時があるので、プロパティ取得で取り直す
+    if ('power' in props.params || 'main_power' in props.params || 'bg_power' in props.params) {
+      // プロパティを更新
+      await this.updateProperty();
     } else {
       // プロパティを更新
       Object.assign(this.state, props.params);
-
-      // 更新を通知
-      this.onDeviceUpdated?.(props.params);
     }
+
+    // 変更があったやつだけ反映させる
+    const newState = Object.assign({}, this.state);
+    this.stateProps.forEach((key) => {
+      if (newState[key] === currentState[key]) {
+        newState[key] = undefined;
+      }
+    });
+
+    // 更新を通知
+    this.onDeviceUpdated?.(newState);
   }
 
   /**
@@ -225,22 +234,32 @@ export default class ScreenLightBar {
   }
 
   async setBrightness(type: YeelightTypes.LightType, value: number, log?: Logging): Promise<void> {
-    const command = ((_type, _value): [YeelightTypes.CommandMessage, YeelightTypes.DeviceProperty] => {
+    const command = ((_type, _value, _currentState): [YeelightTypes.CommandMessage, YeelightTypes.DeviceProperty] | null => {
       switch (_type) {
         case 'main':
+          if (_currentState.bright === _value) {
+            return null;
+          }
           return [{
             id: -1,
             method: 'set_bright',
             params: [value, 'smooth', 250],
           }, { 'bright': _value }];
         case 'background':
+          if (_currentState.bg_bright === _value) {
+            return null;
+          }
           return [{
             id: -1,
             method: 'bg_set_bright',
             params: [value, 'smooth', 250],
           }, { 'bg_bright': _value }];
       }
-    })(type, value);
+    })(type, value, this.state);
+
+    if (!command) {
+      return;
+    }
 
     // コマンドを実行
     this.setSendCommandPool(command, log);
@@ -250,22 +269,28 @@ export default class ScreenLightBar {
   }
 
   async setColorTemperature(type: YeelightTypes.LightType, value: number, log?: Logging): Promise<void> {
-    const command = ((_type, _value): [YeelightTypes.CommandMessage, YeelightTypes.DeviceProperty] | null => {
+    const command = ((_type, _value, _currentState): [YeelightTypes.CommandMessage, YeelightTypes.DeviceProperty] | null => {
       switch (_type) {
         case 'main':
+          if (_currentState.ct === _value) {
+            return null;
+          }
           return [{
             id: -1,
             method: 'set_ct_abx',
             params: [_value, 'smooth', 250],
           }, { 'ct': _value }];
         case 'background':
+          if (_currentState.bg_ct === _value) {
+            return null;
+          }
           return [{
             id: -1,
             method: 'bg_set_ct_abx',
             params: [_value, 'smooth', 250],
           }, { 'bg_ct': _value}];
       }
-    })(type, value);
+    })(type, value, this.state);
 
     if (!command) {
       return;
