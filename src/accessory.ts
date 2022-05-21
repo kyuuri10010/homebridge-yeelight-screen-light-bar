@@ -350,8 +350,8 @@ export class YeelightAccessory implements AccessoryPlugin {
     const backgroundService = this.services[2];
 
     // メインライト
-    if (state.power !== undefined) {
-      const value = state.power === 'on';
+    if (state.main_power !== undefined) {
+      const value = state.main_power === 'on';
       mainService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(value);
 
       // AdaptiveLightngが有効の場合は色温度ををセットする

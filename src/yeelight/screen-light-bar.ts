@@ -9,7 +9,7 @@ export default class ScreenLightBar {
   readonly ipAddr: string;
   readonly device: yeelightPlatform.Device;
   readonly model: YeelightTypes.SupportedModel = 'lamp15';
-  readonly stateProps: (keyof YeelightTypes.DeviceProperty)[] = ['power', 'bright', 'ct', 'bg_power', 'bg_lmode', 'bg_bright', 'bg_rgb', 'bg_hue', 'bg_sat'];
+  readonly stateProps: (keyof YeelightTypes.DeviceProperty)[] = ['main_power', 'bright', 'ct', 'bg_power', 'bg_lmode', 'bg_bright', 'bg_rgb', 'bg_hue', 'bg_sat'];
   private state: YeelightTypes.DeviceProperty = {};
   private updateTimerTime = 500;
   private updateTimer: {
@@ -118,8 +118,8 @@ export default class ScreenLightBar {
   getOn(type: YeelightTypes.LightType): boolean | null {
     switch (type) {
       case 'main':
-        if (this.state.power) {
-          return this.state.power === 'on';
+        if (this.state.main_power) {
+          return this.state.main_power === 'on';
         }
         return null;
       case 'background':
@@ -202,14 +202,14 @@ export default class ScreenLightBar {
     const command = ((_type, _isOn, _effect, _currentState): [YeelightTypes.CommandMessage, YeelightTypes.DeviceProperty] | null => {
       switch (_type) {
         case 'main':
-          if (_currentState.power === isOn) {
+          if (_currentState.main_power === isOn) {
             return null;
           }
           return [{
             id: -1,
             method: 'set_power',
             params: [_isOn, _effect, 500],
-          }, { 'power': _isOn }];
+          }, { 'main_power': _isOn }];
         case 'background':
           if (_currentState.bg_power === isOn) {
             return null;
