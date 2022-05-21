@@ -240,6 +240,9 @@ export default class ScreenLightBar {
           if (_currentState.bright === _value) {
             return null;
           }
+          if (_currentState.power !== 'on') {
+            return null;
+          }
           return [{
             id: -1,
             method: 'set_bright',
@@ -247,6 +250,9 @@ export default class ScreenLightBar {
           }, { 'bright': _value }];
         case 'background':
           if (_currentState.bg_bright === _value) {
+            return null;
+          }
+          if (_currentState.bg_power !== 'on') {
             return null;
           }
           return [{
@@ -275,6 +281,9 @@ export default class ScreenLightBar {
           if (_currentState.ct === _value) {
             return null;
           }
+          if (_currentState.power !== 'on') {
+            return null;
+          }
           return [{
             id: -1,
             method: 'set_ct_abx',
@@ -282,6 +291,9 @@ export default class ScreenLightBar {
           }, { 'ct': _value }];
         case 'background':
           if (_currentState.bg_ct === _value) {
+            return null;
+          }
+          if (_currentState.bg_power !== 'on') {
             return null;
           }
           return [{
@@ -312,6 +324,9 @@ export default class ScreenLightBar {
           if (!_currentState.bg_sat){
             return null;
           }
+          if (_currentState.bg_power !== 'on') {
+            return null;
+          }
           return [{
             id: -1,
             method: 'bg_set_hsv',
@@ -338,6 +353,9 @@ export default class ScreenLightBar {
           return null;
         case 'background':
           if (!_currentState.bg_hue){
+            return null;
+          }
+          if (_currentState.bg_power !== 'on') {
             return null;
           }
           return [{
