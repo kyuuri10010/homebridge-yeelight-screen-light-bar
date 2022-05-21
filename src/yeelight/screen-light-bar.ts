@@ -240,7 +240,7 @@ export default class ScreenLightBar {
           if (_currentState.bright === _value) {
             return null;
           }
-          if (_currentState.power !== 'on') {
+          if (_currentState.main_power !== 'on') {
             return null;
           }
           return [{
@@ -281,7 +281,7 @@ export default class ScreenLightBar {
           if (_currentState.ct === _value) {
             return null;
           }
-          if (_currentState.power !== 'on') {
+          if (_currentState.main_power !== 'on') {
             return null;
           }
           return [{
