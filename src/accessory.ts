@@ -344,7 +344,7 @@ export class YeelightAccessory implements AccessoryPlugin {
    * @param {YeelightTypes.DeviceProperty} state
    * @memberof YeelightAccessory
    */
-  private onDeviceUpdated(state: YeelightTypes.DeviceProperty) {
+  private async onDeviceUpdated(state: YeelightTypes.DeviceProperty) {
     // サービスを取得
     const mainService = this.services[1];
     const backgroundService = this.services[2];
@@ -353,17 +353,22 @@ export class YeelightAccessory implements AccessoryPlugin {
     if (state.power !== undefined) {
       const value = state.power === 'on';
       mainService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(value);
+
+      // AdaptiveLightngが有効の場合は色温度ををセットする
+      await this.setAdaptiveLitingColorTemperature();
     }
     if (state.ct !== undefined) {
-      // AdaptiveLightngが有効の場合は停止する
-      this.disableAdaptiveLighting();
       const value = this.convertColorTempalture(state.ct);
       mainService.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).updateValue(value);
+
+      // AdaptiveLightngが有効の場合は停止する
+      this.disableAdaptiveLighting();
     }
     if (state.bright !== undefined) {
       mainService.getCharacteristic(this.api.hap.Characteristic.Brightness).updateValue(state.bright);
+
       // AdaptiveLightngが有効の場合は色温度をセットする
-      this.setAdaptiveLitingColorTemperature();
+      await this.setAdaptiveLitingColorTemperature();
     }
 
     // バックグラウンドライト
