@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "homebridge-yeelight-screen-light-bar",
+  "pluginAlias": "YeelightScreenLightBar",
   "pluginType": "accessory",
   "singular": false,
   "schema": {
