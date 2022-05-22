@@ -4,12 +4,13 @@ import yeelightPlatform from 'yeelight-platform';
 import * as YeelightTypes from './type/yeelight-types';
 import * as TypeCheck from './type/typecheck';
 import * as DeviceUtil from './device-util';
+import homebridgeLib from 'homebridge-lib';
 
 export default class ScreenLightBar {
   readonly ipAddr: string;
   readonly device: yeelightPlatform.Device;
   readonly model: YeelightTypes.SupportedModel = 'lamp15';
-  readonly stateProps: (keyof YeelightTypes.DeviceProperty)[] = ['main_power', 'bright', 'ct', 'bg_power', 'bg_lmode', 'bg_bright', 'bg_rgb', 'bg_hue', 'bg_sat'];
+  readonly stateProps: (keyof YeelightTypes.DeviceProperty)[] = ['main_power', 'bright', 'ct', 'bg_power', 'bg_lmode', 'bg_bright', 'bg_ct', 'bg_rgb', 'bg_hue', 'bg_sat'];
   private state: YeelightTypes.DeviceProperty = {};
   private updateTimerTime = 500;
   private updateTimer: {
@@ -93,6 +94,14 @@ export default class ScreenLightBar {
         newState[key] = undefined;
       }
     });
+
+    // バックグラウンドライトは、モードに応じて更新を通知しないようにする
+    if (this.state.bg_lmode === 1) {
+      newState['bg_ct'] = undefined;
+    } else {
+      newState['bg_hue'] = undefined;
+      newState['bg_sat'] = undefined;
+    }
 
     // 更新を通知
     this.onDeviceUpdated?.(newState);
@@ -320,18 +329,20 @@ export default class ScreenLightBar {
       switch (_type) {
         case 'main':
           return null;
-        case 'background':
-          if (!_currentState.bg_sat){
+        case 'background': {
+          if (_currentState.bg_hue === undefined || _currentState.bg_sat === undefined) {
             return null;
           }
           if (_currentState.bg_power !== 'on') {
             return null;
           }
+          const rgb = this.getYeelightRgbFromHsv(_value, _currentState.bg_sat);
           return [{
             id: -1,
-            method: 'bg_set_hsv',
-            params: [_value, _currentState.bg_sat, 'smooth', 250],
+            method: 'bg_set_rgb',
+            params: [rgb, _value, 'smooth', 250],
           }, { 'bg_hue': _value }];
+        }
       }
     })(type, value, this.state);
 
@@ -351,18 +362,20 @@ export default class ScreenLightBar {
       switch (_type) {
         case 'main':
           return null;
-        case 'background':
-          if (!_currentState.bg_hue){
+        case 'background': {
+          if (_currentState.bg_hue === undefined || _currentState.bg_sat === undefined) {
             return null;
           }
           if (_currentState.bg_power !== 'on') {
             return null;
           }
+          const rgb = this.getYeelightRgbFromHsv(_currentState.bg_hue, _value);
           return [{
             id: -1,
-            method: 'bg_set_hsv',
-            params: [_currentState.bg_hue, _value, 'smooth', 250],
+            method: 'bg_set_rgb',
+            params: [rgb, _value, 'smooth', 250],
           }, { 'bg_sat': _value }];
+        }
       }
     })(type, value, this.state);
 
@@ -375,5 +388,10 @@ export default class ScreenLightBar {
 
     // プロパティを更新
     Object.assign(this.state, command[1]);
+  }
+
+  getYeelightRgbFromHsv(h: number, s: number): number {
+    const rgb = homebridgeLib.Colour.hsvToRgb(h, s, 100);
+    return Math.floor(rgb.r * 255) * 65536 + Math.floor(rgb.g * 255) * 256 + Math.floor(rgb.b * 255);
   }
 }
