@@ -40,6 +40,8 @@ export class YeelightAccessory implements AccessoryPlugin {
         device.updateProperty();
         this.job = schedule.scheduleJob('*/5 * * * *', this.scheduleJobAction.bind(this));
         this.log.info(`${ACCESSORY_NAME} finished initializing!!`);
+      }).catch((error) => {
+        this.log.error(`${ACCESSORY_NAME} failed initializing. - ${error}`);
       });
     }
   }
@@ -81,11 +83,15 @@ export class YeelightAccessory implements AccessoryPlugin {
         this.log.debug('main - get - on');
         return this.device?.getOn('main') ?? false;
       }).onSet(async (value) => {
-        this.log.debug('main - set - on');
-        await this.device?.setOn('main', value as boolean, true, this.log);
+        try {
+          this.log.debug('main - set - on');
+          await this.device?.setOn('main', value as boolean, true, this.log);
 
-        // AdaptiveLightngが有効の場合は、色温度ををセットする
-        await this.setAdaptiveLitingColorTemperature();
+          // AdaptiveLightngが有効の場合は、色温度ををセットする
+          await this.setAdaptiveLitingColorTemperature();
+        } catch {
+          this.log.debug('main - set - on - error');
+        }
       });
 
     service.getCharacteristic(this.api.hap.Characteristic.Brightness)
@@ -95,11 +101,15 @@ export class YeelightAccessory implements AccessoryPlugin {
         this.log.debug('main - get - Brightness');
         return this.device?.getBrightness('main') ?? 1;
       }).onSet(async (value) => {
-        this.log.debug('main - set - Brightness');
-        await this.device?.setBrightness('main', value as number, this.log);
+        try {
+          this.log.debug('main - set - Brightness');
+          await this.device?.setBrightness('main', value as number, this.log);
 
-        // AdaptiveLightngが有効の場合は、色温度ををセットする
-        await this.setAdaptiveLitingColorTemperature();
+          // AdaptiveLightngが有効の場合は、色温度ををセットする
+          await this.setAdaptiveLitingColorTemperature();
+        } catch {
+          this.log.debug('main - set - Brightness - error');
+        }
       });
 
     service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature)
@@ -114,12 +124,16 @@ export class YeelightAccessory implements AccessoryPlugin {
         }
         return this.convertColorTempalture(value);
       }).onSet(async (value) => {
-        this.log.debug('main - set - ColorTemperature');
-        const converted = this.convertMired(value as number);
-        await this.device?.setColorTemperature('main', converted, this.log);
+        try {
+          this.log.debug('main - set - ColorTemperature');
+          const converted = this.convertMired(value as number);
+          await this.device?.setColorTemperature('main', converted, this.log);
 
-        // AdaptiveLightngが有効の場合は停止する
-        this.disableAdaptiveLighting();
+          // AdaptiveLightngが有効の場合は停止する
+          this.disableAdaptiveLighting();
+        } catch {
+          this.log.debug('main - set - ColorTemperature - error');
+        }
       });
 
     // AdaptiveLighting
@@ -156,20 +170,24 @@ export class YeelightAccessory implements AccessoryPlugin {
         return control;
       })
       .onSet(async (value) => {
-        this.log.debug('main - set - CharacteristicValueTransitionControl');
+        try {
+          this.log.debug('main - set - CharacteristicValueTransitionControl');
 
-        // AdaptiveLightingを有効にする
-        this.adaptiveLighting?.parseControl(value as string);
-        const controlResponse = this.adaptiveLighting?.generateControlResponse();
-        if (controlResponse) {
-          this.adaptiveLighting!.parseControl(controlResponse);
+          // AdaptiveLightingを有効にする
+          this.adaptiveLighting?.parseControl(value as string);
+          const controlResponse = this.adaptiveLighting?.generateControlResponse();
+          if (controlResponse) {
+            this.adaptiveLighting!.parseControl(controlResponse);
+          }
+
+          service.getCharacteristic(this.api.hap.Characteristic.CharacteristicValueActiveTransitionCount)
+            .updateValue(1);
+
+          // 色温度をセットする
+          await this.setAdaptiveLitingColorTemperature();
+        } catch {
+          this.log.debug('main - set - CharacteristicValueTransitionControl - error');
         }
-
-        service.getCharacteristic(this.api.hap.Characteristic.CharacteristicValueActiveTransitionCount)
-          .updateValue(1);
-
-        // 色温度をセットする
-        await this.setAdaptiveLitingColorTemperature();
       });
 
     service.getCharacteristic(this.api.hap.Characteristic.CharacteristicValueActiveTransitionCount)
@@ -191,8 +209,12 @@ export class YeelightAccessory implements AccessoryPlugin {
         this.log.debug('background - get - On');
         return this.device?.getOn('background') ?? false;
       }).onSet(async (value) => {
-        this.log.debug('background - set - On');
-        await this.device?.setOn('background', value as boolean, true, this.log);
+        try {
+          this.log.debug('background - set - On');
+          await this.device?.setOn('background', value as boolean, true, this.log);
+        } catch {
+          this.log.debug('background - set - On - error');
+        }
       });
 
     service.getCharacteristic(this.api.hap.Characteristic.Brightness)
@@ -202,8 +224,12 @@ export class YeelightAccessory implements AccessoryPlugin {
         this.log.debug('background - get - Brightness');
         return this.device?.getBrightness('background') ?? 1;
       }).onSet(async (value) => {
-        this.log.debug('background - set - Brightness');
-        await this.device?.setBrightness('background', value as number, this.log);
+        try {
+          this.log.debug('background - set - Brightness');
+          await this.device?.setBrightness('background', value as number, this.log);
+        } catch {
+          this.log.debug('background - set - Brightness - error');
+        }
       });
 
     service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature)
@@ -218,9 +244,13 @@ export class YeelightAccessory implements AccessoryPlugin {
         }
         return this.convertColorTempalture(value);
       }).onSet(async (value) => {
-        this.log.debug('background - set - ColorTemperature');
-        const converted = this.convertMired(value as number);
-        await this.device?.setColorTemperature('background', converted, this.log);
+        try {
+          this.log.debug('background - set - ColorTemperature');
+          const converted = this.convertMired(value as number);
+          await this.device?.setColorTemperature('background', converted, this.log);
+        } catch {
+          this.log.debug('background - set - ColorTemperature - error');
+        }
       });
 
     service.getCharacteristic(this.api.hap.Characteristic.Hue)
@@ -230,8 +260,12 @@ export class YeelightAccessory implements AccessoryPlugin {
         this.log.debug('background - get - Hue');
         return this.device?.getHue('background') ?? 0;
       }).onSet(async (value) => {
-        this.log.debug('background - set - Hue');
-        await this.device?.setHue('background', value as number, this.log);
+        try {
+          this.log.debug('background - set - Hue');
+          await this.device?.setHue('background', value as number, this.log);
+        } catch {
+          this.log.debug('background - set - Hue - error');
+        }
       });
 
     service.getCharacteristic(this.api.hap.Characteristic.Saturation)
@@ -239,9 +273,12 @@ export class YeelightAccessory implements AccessoryPlugin {
         this.log.debug('background - get - Saturation');
         return this.device?.getSaturation('background') ?? 0;
       }).onSet(async (value) => {
-        this.log.debug('background - set - Saturation');
-
-        await this.device?.setSaturation('background', value as number, this.log);
+        try {
+          this.log.debug('background - set - Saturation');
+          await this.device?.setSaturation('background', value as number, this.log);
+        } catch {
+          this.log.debug('background - set - Saturation - error');
+        }
       });
 
     this.services.push(service);
@@ -257,7 +294,7 @@ export class YeelightAccessory implements AccessoryPlugin {
     this.log.debug('scheduleJobAction');
 
     // AdaptiveLighting
-    this.setAdaptiveLitingColorTemperature();
+    this.setAdaptiveLitingColorTemperature().catch();
   }
 
   /**
@@ -300,7 +337,7 @@ export class YeelightAccessory implements AccessoryPlugin {
    * @return {*}
    * @memberof YeelightAccessory
    */
-  async setAdaptiveLitingColorTemperature() {
+  private async setAdaptiveLitingColorTemperature() {
     // 明るさを取得
     const brightness = this.device?.getBrightness('main');
     if (typeof brightness !== 'number') {
@@ -325,7 +362,7 @@ export class YeelightAccessory implements AccessoryPlugin {
      * @return {*}
      * @memberof YeelightAccessory
      */
-  disableAdaptiveLighting() {
+  private disableAdaptiveLighting() {
     // 既に停止している場合は何もしない
     if (!(this.adaptiveLighting && this.adaptiveLighting.active)) {
       return;
@@ -355,7 +392,7 @@ export class YeelightAccessory implements AccessoryPlugin {
       mainService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(value);
 
       // AdaptiveLightngが有効の場合は色温度ををセットする
-      await this.setAdaptiveLitingColorTemperature();
+      await this.setAdaptiveLitingColorTemperature().catch();
     }
     if (state.ct !== undefined) {
       const value = this.convertColorTempalture(state.ct);
@@ -368,7 +405,7 @@ export class YeelightAccessory implements AccessoryPlugin {
       mainService.getCharacteristic(this.api.hap.Characteristic.Brightness).updateValue(state.bright);
 
       // AdaptiveLightngが有効の場合は色温度をセットする
-      await this.setAdaptiveLitingColorTemperature();
+      await this.setAdaptiveLitingColorTemperature().catch();
     }
 
     // バックグラウンドライト

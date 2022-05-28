@@ -194,12 +194,17 @@ export default class ScreenLightBar {
 
     // タイマーをセット
     this.updateTimer[command[0].method] = setTimeout(async () => {
-      this.updateTimer[command[0].method] = undefined;
+      try {
+        this.updateTimer[command[0].method] = undefined;
 
-      // コマンドを実行
-      await DeviceUtil.sendCommand(this.device, command[0], log);
+        // コマンドを実行
+        await DeviceUtil.sendCommand(this.device, command[0], log);
 
-      log?.debug(`Execute Timer - ${command[0].method}`);
+        log?.debug(`Execute Timer - ${command[0].method}`);
+      } catch {
+        log?.debug(`Failed Timer - ${command[0].method}`);
+      }
+
     }, this.updateTimerTime);
     log?.debug(`Set Timer - ${command[0].method}`);
   }
@@ -390,7 +395,7 @@ export default class ScreenLightBar {
     Object.assign(this.state, command[1]);
   }
 
-  getYeelightRgbFromHsv(h: number, s: number): number {
+  private getYeelightRgbFromHsv(h: number, s: number): number {
     const rgb = homebridgeLib.Colour.hsvToRgb(h, s, 100);
     return Math.floor(rgb.r * 255) * 65536 + Math.floor(rgb.g * 255) * 256 + Math.floor(rgb.b * 255);
   }
