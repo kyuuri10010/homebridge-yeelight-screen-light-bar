@@ -58,7 +58,6 @@ export default class ScreenLightBar {
 
     // ScreenLightBar
     const screenLightBar = new ScreenLightBar(device, ipAddr);
-    await screenLightBar.updateProperty().catch();
     return screenLightBar;
   }
 

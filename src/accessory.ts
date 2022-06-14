@@ -4,6 +4,7 @@ import {
   API,
   Logging,
   Service,
+  HAPStatus,
 } from 'homebridge';
 import homebridgeLib, { AdaptiveLighting } from 'homebridge-lib';
 import schedule from 'node-schedule';
@@ -81,7 +82,12 @@ export class YeelightAccessory implements AccessoryPlugin {
     service.getCharacteristic(this.api.hap.Characteristic.On)
       .onGet(async () => {
         this.log.debug('main - get - on');
-        return this.device?.getOn('main') ?? false;
+        const value = this.device?.getOn('main');
+        if (typeof value !== 'boolean') {
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
+        }
+
+        return value;
       }).onSet(async (value) => {
         try {
           this.log.debug('main - set - on');
@@ -91,6 +97,7 @@ export class YeelightAccessory implements AccessoryPlugin {
           await this.setAdaptiveLitingColorTemperature();
         } catch {
           this.log.debug('main - set - on - error');
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
         }
       });
 
@@ -99,7 +106,12 @@ export class YeelightAccessory implements AccessoryPlugin {
         minValue: 1,
       }).onGet(async () => {
         this.log.debug('main - get - Brightness');
-        return this.device?.getBrightness('main') ?? 1;
+        const value = this.device?.getBrightness('main');
+        if (typeof value !== 'number') {
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
+        }
+
+        return value;
       }).onSet(async (value) => {
         try {
           this.log.debug('main - set - Brightness');
@@ -109,6 +121,7 @@ export class YeelightAccessory implements AccessoryPlugin {
           await this.setAdaptiveLitingColorTemperature();
         } catch {
           this.log.debug('main - set - Brightness - error');
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
         }
       });
 
@@ -119,9 +132,10 @@ export class YeelightAccessory implements AccessoryPlugin {
       }).onGet(async () => {
         this.log.debug('main - get - ColorTemperature');
         const value = this.device?.getColorTemperature('main');
-        if (!value) {
-          return 153;
+        if (typeof value !== 'number') {
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
         }
+
         return this.convertColorTempalture(value);
       }).onSet(async (value) => {
         try {
@@ -133,6 +147,7 @@ export class YeelightAccessory implements AccessoryPlugin {
           this.disableAdaptiveLighting();
         } catch {
           this.log.debug('main - set - ColorTemperature - error');
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
         }
       });
 
@@ -187,6 +202,7 @@ export class YeelightAccessory implements AccessoryPlugin {
           await this.setAdaptiveLitingColorTemperature();
         } catch {
           this.log.debug('main - set - CharacteristicValueTransitionControl - error');
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
         }
       });
 
@@ -207,13 +223,19 @@ export class YeelightAccessory implements AccessoryPlugin {
     service.getCharacteristic(this.api.hap.Characteristic.On)
       .onGet(async () => {
         this.log.debug('background - get - On');
-        return this.device?.getOn('background') ?? false;
+        const value = this.device?.getOn('background');
+        if (typeof value !== 'boolean') {
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
+        }
+
+        return value;
       }).onSet(async (value) => {
         try {
           this.log.debug('background - set - On');
           await this.device?.setOn('background', value as boolean, true, this.log);
         } catch {
           this.log.debug('background - set - On - error');
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
         }
       });
 
@@ -222,13 +244,19 @@ export class YeelightAccessory implements AccessoryPlugin {
         minValue: 1,
       }).onGet(async () => {
         this.log.debug('background - get - Brightness');
-        return this.device?.getBrightness('background') ?? 1;
+        const value = this.device?.getBrightness('background');
+        if (typeof value !== 'number') {
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
+        }
+
+        return value;
       }).onSet(async (value) => {
         try {
           this.log.debug('background - set - Brightness');
           await this.device?.setBrightness('background', value as number, this.log);
         } catch {
           this.log.debug('background - set - Brightness - error');
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
         }
       });
 
@@ -239,9 +267,10 @@ export class YeelightAccessory implements AccessoryPlugin {
       }).onGet(async () => {
         this.log.debug('background - get - ColorTemperature');
         const value = this.device?.getColorTemperature('background');
-        if (!value) {
-          return 153;
+        if (typeof value !== 'number') {
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
         }
+
         return this.convertColorTempalture(value);
       }).onSet(async (value) => {
         try {
@@ -250,6 +279,7 @@ export class YeelightAccessory implements AccessoryPlugin {
           await this.device?.setColorTemperature('background', converted, this.log);
         } catch {
           this.log.debug('background - set - ColorTemperature - error');
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
         }
       });
 
@@ -258,26 +288,38 @@ export class YeelightAccessory implements AccessoryPlugin {
         maxValue: 359,
       }).onGet(async () => {
         this.log.debug('background - get - Hue');
-        return this.device?.getHue('background') ?? 0;
+        const value = this.device?.getHue('background');
+        if (typeof value !== 'number') {
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
+        }
+
+        return value;
       }).onSet(async (value) => {
         try {
           this.log.debug('background - set - Hue');
           await this.device?.setHue('background', value as number, this.log);
         } catch {
           this.log.debug('background - set - Hue - error');
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
         }
       });
 
     service.getCharacteristic(this.api.hap.Characteristic.Saturation)
       .onGet(async () => {
         this.log.debug('background - get - Saturation');
-        return this.device?.getSaturation('background') ?? 0;
+        const value = this.device?.getSaturation('background');
+        if (typeof value !== 'number') {
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
+        }
+
+        return value;
       }).onSet(async (value) => {
         try {
           this.log.debug('background - set - Saturation');
           await this.device?.setSaturation('background', value as number, this.log);
         } catch {
           this.log.debug('background - set - Saturation - error');
+          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
         }
       });
 
