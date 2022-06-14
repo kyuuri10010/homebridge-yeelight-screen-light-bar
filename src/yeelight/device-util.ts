@@ -74,7 +74,7 @@ export async function sendCommand(device: yeelightPlatform.Device, data: Yeeligh
       device.removeListener('deviceUpdate', deviceUpdated);
       log?.error('Send command is timeout');
       reject();
-    }, 10000);
+    }, 5000);
 
     device.on('deviceUpdate', deviceUpdated);
     device.sendCommand(data);
