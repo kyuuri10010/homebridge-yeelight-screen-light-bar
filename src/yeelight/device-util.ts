@@ -30,8 +30,17 @@ export async function connectDevice(device: yeelightPlatform.Device): Promise<vo
 
     const timeout = setTimeout(() => {
       device.removeListener('connected', connected);
+
+      // タイムアウト時に、これ以降リトライしないようにする
+      if (device.socket) {
+        device.disconnect(true);
+      } else if (device.retry_timer) {
+        clearTimeout(device.retry_timer);
+        device.retry_timer = null;
+      }
+
       reject('Connection timeout');
-    }, 5000);
+    }, (5 * 60 * 1000));
 
     device.on('connected', connected);
     device.connect();

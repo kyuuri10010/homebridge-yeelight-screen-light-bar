@@ -1,5 +1,6 @@
 declare module 'yeelight-platform' {
     import { EventEmitter } from 'stream';
+    import * as net from 'net';
 
     export interface DeviceInfo {
         debug: boolean;
@@ -15,7 +16,8 @@ declare module 'yeelight-platform' {
       forceDisconnect: boolean;
       timer: number | null;
       polligInterval: number;
-      retry_timer: number | null;
+      retry_timer: NodeJS.Timeout | null;
+      socket: net.Socket | undefined | null;
 
       constructor(device: DeviceInfo)
       connect(): void
