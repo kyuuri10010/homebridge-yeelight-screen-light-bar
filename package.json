@@ -4,7 +4,7 @@
   "name": "homebridge-yeelight-screen-light-bar",
   "version": "1.0.0",
   "description": "Homebridge plugin for YeeLight Screen Light Bar",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git://github.com/kyuuri10010/homebridge-yeelight-screen-light-bar.git"
