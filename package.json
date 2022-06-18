@@ -1,16 +1,16 @@
 {
-  "private": true,
+  "private": false,
   "displayName": "Homebridge Yeelight Screen Light Bar",
   "name": "homebridge-yeelight-screen-light-bar",
   "version": "1.0.0",
-  "description": "A short description about what your plugin does.",
+  "description": "Homebridge plugin for YeeLight Screen Light Bar",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git://github.com/USERNAME/GITHUB_PROJECT_NAME.git"
+    "url": "git://github.com/kyuuri10010/homebridge-yeelight-screen-light-bar.git"
   },
   "bugs": {
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME/issues"
+    "url": "https://github.com/kyuuri10010/homebridge-yeelight-screen-light-bar/issues"
   },
   "engines": {
     "node": ">=14.18.1",
@@ -24,7 +24,8 @@
     "prepublishOnly": "npm run lint && npm run build"
   },
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "yeelight"
   ],
   "dependencies": {
     "@types/node-schedule": "^2.1.0",
