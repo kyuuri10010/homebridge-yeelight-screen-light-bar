@@ -2,7 +2,7 @@
   "private": false,
   "displayName": "Homebridge Yeelight Screen Light Bar",
   "name": "homebridge-yeelight-screen-light-bar",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Homebridge plugin for YeeLight Screen Light Bar",
   "license": "MIT",
   "repository": {
