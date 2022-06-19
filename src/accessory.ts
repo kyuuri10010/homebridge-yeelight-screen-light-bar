@@ -38,7 +38,7 @@ export class YeelightAccessory implements AccessoryPlugin {
       ScreenLightBar.init(config.ip).then((device) => {
         this.device = device;
         device.onDeviceUpdated = this.onDeviceUpdated.bind(this);
-        device.updateProperty();
+        device.updateProperty(true);
         this.job = schedule.scheduleJob('*/5 * * * *', this.scheduleJobAction.bind(this));
         this.log.info(`${ACCESSORY_NAME} finished initializing!!`);
       }).catch((error) => {

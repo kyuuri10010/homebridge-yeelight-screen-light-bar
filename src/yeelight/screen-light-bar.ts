@@ -5,6 +5,7 @@ import * as YeelightTypes from './type/yeelight-types';
 import * as TypeCheck from './type/typecheck';
 import * as DeviceUtil from './device-util';
 import homebridgeLib from 'homebridge-lib';
+import delay from 'delay';
 
 export default class ScreenLightBar {
   readonly ipAddr: string;
@@ -44,7 +45,7 @@ export default class ScreenLightBar {
       host: ipAddr,
       port: 55443,
       debug: false,
-      interval: 5000,
+      interval: 30 * 1000,
     });
 
     // 接続
@@ -58,6 +59,12 @@ export default class ScreenLightBar {
 
     // ScreenLightBar
     const screenLightBar = new ScreenLightBar(device, ipAddr);
+    screenLightBar.device.on('connected', async () => {
+      await delay(1000);
+
+      // 再接続した時にプロパティを更新させる
+      await screenLightBar.updateProperty(true);
+    });
     return screenLightBar;
   }
 
@@ -75,35 +82,22 @@ export default class ScreenLightBar {
     }
 
     // 現在の状態を保持しておく
-    const currentState = Object.assign({}, this.state);
+    const oldState = Object.assign({}, this.state);
 
     // power系のプロパティはなんかおかしい時があるので、プロパティ取得で取り直す
     if ('power' in props.params || 'main_power' in props.params || 'bg_power' in props.params) {
       // プロパティを更新
-      await this.updateProperty();
+      await this.updateProperty(false);
     } else {
       // プロパティを更新
       Object.assign(this.state, props.params);
     }
 
     // 変更があったやつだけ反映させる
-    const newState = Object.assign({}, this.state);
-    this.stateProps.forEach((key) => {
-      if (newState[key] === currentState[key]) {
-        newState[key] = undefined;
-      }
-    });
-
-    // バックグラウンドライトは、モードに応じて更新を通知しないようにする
-    if (this.state.bg_lmode === 1) {
-      newState['bg_ct'] = undefined;
-    } else {
-      newState['bg_hue'] = undefined;
-      newState['bg_sat'] = undefined;
-    }
+    const notifyProps = this.propertyToNotify(this.state, oldState);
 
     // 更新を通知
-    this.onDeviceUpdated?.(newState);
+    this.onDeviceUpdated?.(notifyProps);
   }
 
   /**
@@ -112,7 +106,7 @@ export default class ScreenLightBar {
    * @return {*}
    * @memberof ScreenLightBar
    */
-  async updateProperty() {
+  async updateProperty(isNotify = false) {
     const result = await DeviceUtil.getProperty(this.device, this.stateProps);
     if (!result) {
       return;
@@ -120,6 +114,44 @@ export default class ScreenLightBar {
 
     // 取得したプロパティをセット
     this.state = result;
+
+    // アクセサリに更新を通知
+    if (isNotify) {
+      const notifyProps = this.propertyToNotify(result, undefined);
+      this.onDeviceUpdated?.(notifyProps);
+    }
+  }
+
+  /**
+   * アクセサリに通知するためのプロパティ情報を作成する。
+   * 古い状態を渡した場合は差分を返す。
+   *
+   * @param {YeelightTypes.DeviceProperty} newState
+   * @param {YeelightTypes.DeviceProperty} [oldState]
+   * @return {*}  {YeelightTypes.DeviceProperty}
+   * @memberof ScreenLightBar
+   */
+  propertyToNotify(newState: YeelightTypes.DeviceProperty, oldState?: YeelightTypes.DeviceProperty): YeelightTypes.DeviceProperty {
+    const result = Object.assign({}, newState);
+
+    // 古い状態がある場合は、変更があったやつだけ反映させる
+    if (oldState) {
+      this.stateProps.forEach((key) => {
+        if (result[key] === oldState[key]) {
+          result[key] = undefined;
+        }
+      });
+    }
+
+    // バックグラウンドライトは、モードに応じて更新を通知しないようにする
+    if (newState.bg_lmode === 1) {
+      result['bg_ct'] = undefined;
+    } else {
+      result['bg_hue'] = undefined;
+      result['bg_sat'] = undefined;
+    }
+
+    return result;
   }
 
   // MARK: - プロパティ取得
