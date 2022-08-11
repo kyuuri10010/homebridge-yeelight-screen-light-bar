@@ -5,9 +5,9 @@ import {
   Logging,
   Service,
   HAPStatus,
+  AdaptiveLightingController,
+  AdaptiveLightingControllerMode,
 } from 'homebridge';
-import homebridgeLib, { AdaptiveLighting } from 'homebridge-lib';
-import schedule from 'node-schedule';
 import { ACCESSORY_NAME } from './settings';
 import ScreenLightBar from './yeelight/screen-light-bar';
 import * as YeelightTypes from './yeelight/type/yeelight-types';
@@ -18,9 +18,8 @@ export class YeelightAccessory implements AccessoryPlugin {
   private readonly api: API;
   private readonly ip: string = '';
   private services: Service[] = [];
-  private adaptiveLighting?: AdaptiveLighting;
+  private adaptiveLighting?: AdaptiveLightingController;
   private device?: ScreenLightBar;
-  private job?: schedule.Job;
 
   constructor(log: Logging, config: AccessoryConfig, api: API) {
     this.log = log;
@@ -39,7 +38,6 @@ export class YeelightAccessory implements AccessoryPlugin {
         this.device = device;
         device.onDeviceUpdated = this.onDeviceUpdated.bind(this);
         device.updateProperty(true);
-        this.job = schedule.scheduleJob('*/5 * * * *', this.scheduleJobAction.bind(this));
         this.log.info(`${ACCESSORY_NAME} finished initializing!!`);
       }).catch((error) => {
         this.log.error(`${ACCESSORY_NAME} failed initializing. - ${error}`);
@@ -93,8 +91,15 @@ export class YeelightAccessory implements AccessoryPlugin {
           this.log.debug('main - set - on');
           await this.device?.setOn('main', value as boolean, true, this.log);
 
-          // AdaptiveLightngが有効の場合は、色温度ををセットする
-          await this.setAdaptiveLitingColorTemperature();
+          // AdaptiveLightngが有効の場合は、色温度を反映させる
+          if (this.adaptiveLighting?.isAdaptiveLightingActive()) {
+            const ct = service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature);
+            if (ct.value !== null) {
+              const converted = this.convertMired(ct.value as number);
+              await this.device?.setColorTemperature('main', converted, this.log);
+            }
+          }
+
         } catch {
           this.log.debug('main - set - on - error');
           throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
@@ -116,9 +121,6 @@ export class YeelightAccessory implements AccessoryPlugin {
         try {
           this.log.debug('main - set - Brightness');
           await this.device?.setBrightness('main', value as number, this.log);
-
-          // AdaptiveLightngが有効の場合は、色温度ををセットする
-          await this.setAdaptiveLitingColorTemperature();
         } catch {
           this.log.debug('main - set - Brightness - error');
           throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
@@ -142,9 +144,6 @@ export class YeelightAccessory implements AccessoryPlugin {
           this.log.debug('main - set - ColorTemperature');
           const converted = this.convertMired(value as number);
           await this.device?.setColorTemperature('main', converted, this.log);
-
-          // AdaptiveLightngが有効の場合は停止する
-          this.disableAdaptiveLighting();
         } catch {
           this.log.debug('main - set - ColorTemperature - error');
           throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
@@ -152,62 +151,10 @@ export class YeelightAccessory implements AccessoryPlugin {
       });
 
     // AdaptiveLighting
-    // https://github.com/ebaauw/homebridge-hue/blob/main/lib/HueLight.js
-    service.getCharacteristic(this.api.hap.Characteristic.SupportedCharacteristicValueTransitionConfiguration)
-      .onGet(async () => {
-        this.log.debug('main - get - SupportedCharacteristicValueTransitionConfiguration');
-
-        // 一度だけでいいのでイベントを削除する
-        service.getCharacteristic(this.api.hap.Characteristic.SupportedCharacteristicValueTransitionConfiguration)
-          .removeOnGet();
-
-        // iidを取得
-        const bri = service.getCharacteristic(this.api.hap.Characteristic.Brightness).iid!;
-        const ct = service.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).iid!;
-
-        // AdaptiveLighting を生成
-        this.adaptiveLighting = new homebridgeLib.AdaptiveLighting(bri, ct);
-
-        // TransitionConfiguration を生成
-        const configuration = this.adaptiveLighting!.generateConfiguration();
-        return configuration;
-      });
-
-    service.getCharacteristic(this.api.hap.Characteristic.CharacteristicValueTransitionControl)
-      .onGet(async () => {
-        this.log.debug('main - get - CharacteristicValueTransitionControl');
-
-        // TransitionControl を生成
-        const control = this.adaptiveLighting?.generateControl() ?? null;
-        if (control) {
-          this.adaptiveLighting!.parseControl(control);
-        }
-        return control;
-      })
-      .onSet(async (value) => {
-        try {
-          this.log.debug('main - set - CharacteristicValueTransitionControl');
-
-          // AdaptiveLightingを有効にする
-          this.adaptiveLighting?.parseControl(value as string);
-          const controlResponse = this.adaptiveLighting?.generateControlResponse();
-          if (controlResponse) {
-            this.adaptiveLighting!.parseControl(controlResponse);
-          }
-
-          service.getCharacteristic(this.api.hap.Characteristic.CharacteristicValueActiveTransitionCount)
-            .updateValue(1);
-
-          // 色温度をセットする
-          await this.setAdaptiveLitingColorTemperature();
-        } catch {
-          this.log.debug('main - set - CharacteristicValueTransitionControl - error');
-          throw HAPStatus.SERVICE_COMMUNICATION_FAILURE;
-        }
-      });
-
-    service.getCharacteristic(this.api.hap.Characteristic.CharacteristicValueActiveTransitionCount)
-      .updateValue(0);
+    this.adaptiveLighting = new this.api.hap.AdaptiveLightingController(service, {
+      controllerMode: AdaptiveLightingControllerMode.AUTOMATIC,
+    });
+    this.adaptiveLighting.configureServices();
 
     this.services.push(service);
   }
@@ -327,19 +274,6 @@ export class YeelightAccessory implements AccessoryPlugin {
   }
 
   /**
-   * 定期実行する処理
-   *
-   * @private
-   * @memberof YeelightAccessory
-   */
-  private async scheduleJobAction() {
-    this.log.debug('scheduleJobAction');
-
-    // AdaptiveLighting
-    this.setAdaptiveLitingColorTemperature().catch();
-  }
-
-  /**
    * 色温度をミレッドに変換する
    *
    * @private
@@ -374,31 +308,6 @@ export class YeelightAccessory implements AccessoryPlugin {
   }
 
   /**
-   * AdaptiveLightngの色温度をセットする
-   *
-   * @return {*}
-   * @memberof YeelightAccessory
-   */
-  private async setAdaptiveLitingColorTemperature() {
-    // 明るさを取得
-    const brightness = this.device?.getBrightness('main');
-    if (typeof brightness !== 'number') {
-      return;
-    }
-
-    // 明るさを反映した色温度を取得
-    const mired = this.adaptiveLighting?.getCt(brightness);
-    if (typeof mired !== 'number') {
-      return;
-    }
-
-    // 色温度を変更
-    this.log.debug('Set AdaptiveLighting color temperature');
-    const converted = this.convertMired(mired);
-    await this.device?.setColorTemperature('main', converted, this.log);
-  }
-
-  /**
      * AdaptiveLightingを停止する
      *
      * @return {*}
@@ -406,14 +315,12 @@ export class YeelightAccessory implements AccessoryPlugin {
      */
   private disableAdaptiveLighting() {
     // 既に停止している場合は何もしない
-    if (!(this.adaptiveLighting && this.adaptiveLighting.active)) {
+    if (!(this.adaptiveLighting && this.adaptiveLighting.isAdaptiveLightingActive())) {
       return;
     }
 
     this.log.debug('AdaptiveLighting to disabled');
-    this.adaptiveLighting.deactivate();
-    this.services[1].getCharacteristic(this.api.hap.Characteristic.CharacteristicValueActiveTransitionCount)
-      .updateValue(0);
+    this.adaptiveLighting.disableAdaptiveLighting();
   }
 
   /**
@@ -433,21 +340,35 @@ export class YeelightAccessory implements AccessoryPlugin {
       const value = state.main_power === 'on';
       mainService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(value);
 
-      // AdaptiveLightngが有効の場合は色温度ををセットする
-      await this.setAdaptiveLitingColorTemperature().catch();
+      // AdaptiveLightngが有効の場合は、色温度を反映させる
+      if (state.ct === undefined) {
+        const ct = mainService.getCharacteristic(this.api.hap.Characteristic.ColorTemperature);
+        if (ct.value !== null) {
+          const converted = this.convertMired(ct.value as number);
+          await this.device?.setColorTemperature('main', converted, this.log);
+        }
+      }
     }
     if (state.ct !== undefined) {
       const value = this.convertColorTempalture(state.ct);
       mainService.getCharacteristic(this.api.hap.Characteristic.ColorTemperature).updateValue(value);
 
-      // AdaptiveLightngが有効の場合は停止する
-      this.disableAdaptiveLighting();
+      if (state.main_power === 'on') {
+        // 色温度の変更と電源オンが同時に来ているときは電源をオンにした時なので、この時にAdaptiveLightingが有効の場合は色温度を反映させる
+        if (this.adaptiveLighting?.isAdaptiveLightingActive()) {
+          const ct = mainService.getCharacteristic(this.api.hap.Characteristic.ColorTemperature);
+          if (ct.value !== null) {
+            const converted = this.convertMired(ct.value as number);
+            await this.device?.setColorTemperature('main', converted, this.log);
+          }
+        }
+      } else {
+        // AdaptiveLightngが有効の場合は停止する
+        this.disableAdaptiveLighting();
+      }
     }
     if (state.bright !== undefined) {
       mainService.getCharacteristic(this.api.hap.Characteristic.Brightness).updateValue(state.bright);
-
-      // AdaptiveLightngが有効の場合は色温度をセットする
-      await this.setAdaptiveLitingColorTemperature().catch();
     }
 
     // バックグラウンドライト

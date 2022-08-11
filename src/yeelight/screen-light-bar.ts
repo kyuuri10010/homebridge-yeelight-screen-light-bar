@@ -4,8 +4,8 @@ import yeelightPlatform from 'yeelight-platform';
 import * as YeelightTypes from './type/yeelight-types';
 import * as TypeCheck from './type/typecheck';
 import * as DeviceUtil from './device-util';
-import homebridgeLib from 'homebridge-lib';
 import delay from 'delay';
+import { colord } from 'colord';
 
 export default class ScreenLightBar {
   readonly ipAddr: string;
@@ -427,7 +427,11 @@ export default class ScreenLightBar {
   }
 
   private getYeelightRgbFromHsv(h: number, s: number): number {
-    const rgb = homebridgeLib.Colour.hsvToRgb(h, s, 100);
-    return Math.floor(rgb.r * 255) * 65536 + Math.floor(rgb.g * 255) * 256 + Math.floor(rgb.b * 255);
+    const rgb = colord({
+      h,
+      s,
+      v: 100,
+    }).toRgb();
+    return Math.floor(rgb.r) * 65536 + Math.floor(rgb.g) * 256 + Math.floor(rgb.b);
   }
 }
