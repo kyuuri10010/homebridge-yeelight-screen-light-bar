@@ -34,7 +34,7 @@ export class YeelightAccessory implements AccessoryPlugin {
     // Init Device
     if (typeof config.ip === 'string'){
       this.ip = config.ip;
-      ScreenLightBar.init(config.ip).then((device) => {
+      ScreenLightBar.init(config.ip, this.log).then((device) => {
         this.device = device;
         device.onDeviceUpdated = this.onDeviceUpdated.bind(this);
         device.updateProperty(true);

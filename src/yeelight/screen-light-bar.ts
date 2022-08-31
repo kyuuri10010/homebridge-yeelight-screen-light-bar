@@ -34,7 +34,7 @@ export default class ScreenLightBar {
    * @return {*}  {Promise<ScreenLightBar>}
    * @memberof ScreenLightBar
    */
-  static async init(ipAddr: string): Promise<ScreenLightBar> {
+  static async init(ipAddr: string, log?: Logging): Promise<ScreenLightBar> {
     // IPアドレスをチェック
     if (!isIP(ipAddr)) {
       throw new Error('IP address check error');
@@ -54,7 +54,9 @@ export default class ScreenLightBar {
     // モデル情報を取得する
     const result = await DeviceUtil.getProperty(device, ['model']);
     if (result?.model !== 'lamp15') {
-      throw new Error('Unsupported model');
+      throw new Error(`Unsupported model "${result?.model ?? 'undefined'}"`);
+    } else {
+      log?.info(`Connected model "${result?.model}"`);
     }
 
     // ScreenLightBar
