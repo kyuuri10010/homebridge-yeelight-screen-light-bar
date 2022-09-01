@@ -52,7 +52,7 @@ export default class ScreenLightBar {
     await DeviceUtil.connectDevice(device);
 
     // モデル情報を取得する
-    const result = await DeviceUtil.getProperty(device, ['model']);
+    const result = await DeviceUtil.getProperty(device, ['model'], log);
     if (result?.model !== 'lamp15') {
       throw new Error(`Unsupported model "${result?.model ?? 'undefined'}"`);
     } else {
