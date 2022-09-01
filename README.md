@@ -5,8 +5,15 @@ Homebridge plugin for YeeLight Screen Light Bar.
 <br>
 
 # Supported device
+Only the following devices have been tested, but if the model is "lamp15", it should work.
 
 * YLTD003 (https://japan.yeelight.com/product/1709.html)
+
+<br>
+You can check the model information in the Yeelight app.
+<br>
+Yeelight app > Your device > Setting > Device Info > Model
+
 
 <br>
 
