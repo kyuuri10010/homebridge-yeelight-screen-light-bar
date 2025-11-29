@@ -1,3 +1,12 @@
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
+# ⛔️ DEPRECATED
+
+> **Warning**
+> This repository is no longer maintained.
+
+<br>
+
 # homebridge-yeelight-screen-light-bar
 
 Homebridge plugin for YeeLight Screen Light Bar.
@@ -47,4 +56,5 @@ Add an accessory configuration into your Homebridge config.json:
 | ---- | ----- | ------------------------------- |
 | name | Yes  | Accessory name displayed in the home app. |
 | ip   | Yes | IP address of your device.                           |
+
 
